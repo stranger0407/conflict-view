@@ -1,0 +1,14 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp files
+tmpclaude-*-cwd
