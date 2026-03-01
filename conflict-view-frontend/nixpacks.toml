@@ -1,0 +1,5 @@
+[phases.build]
+cmds = ["npm ci", "npm run build:prod"]
+
+[start]
+cmd = "npx serve -s dist/conflict-view-frontend/browser -l $PORT"
