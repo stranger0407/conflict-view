@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NgxChartsModule, LegendPosition } from '@swimlane/ngx-charts';
+import { curveCardinal } from 'd3-shape';
 import { ConflictService } from '../../core/services/conflict.service';
 import { ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse } from '../../core/models/conflict.model';
 import { SeverityBadgeComponent } from '../../shared/components/severity-badge/severity-badge.component';
@@ -692,7 +693,7 @@ export class ConflictDetailComponent implements OnInit {
   chartScheme: any = { domain: ['#3b82f6', '#f97316', '#22c55e', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#eab308'] };
   sentimentScheme: any = { domain: ['#ef4444', '#6b7280', '#22c55e'] };
   legendPos = LegendPosition.Right;
-  curveCatmull: any;
+  curveCatmull = curveCardinal;
 
   get incidentTrendData() {
     if (!this.stats) return [];
