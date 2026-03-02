@@ -121,6 +121,8 @@ public class GdeltImageOsintService {
     private String buildNameQuery(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(4, words.length)));
+        // Replace dashes with spaces for GDELT compatibility
+        name = name.replace("-", " ").replaceAll("\\s+", " ").trim();
         String keywords = "";
         if (conflict.getKeywords() != null && !conflict.getKeywords().isBlank()) {
             String[] kws = conflict.getKeywords().split(",");
@@ -132,7 +134,9 @@ public class GdeltImageOsintService {
     private String buildImageTagQuery(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(3, words.length)));
-        return name + " (imagetag:\"military\" OR imagetag:\"explosion\" OR imagetag:\"protest\" OR imagetag:\"refugee\" OR imagetag:\"fire\")";
+        // Replace dashes and special chars for GDELT compatibility
+        name = name.replace("-", " ").replace("/", " ").replaceAll("\\s+", " ").trim();
+        return "\"" + name + "\" imagetag:military OR imagetag:explosion OR imagetag:protest OR imagetag:fire";
     }
 
     private LocalDateTime parseGdeltDate(String dateStr) {

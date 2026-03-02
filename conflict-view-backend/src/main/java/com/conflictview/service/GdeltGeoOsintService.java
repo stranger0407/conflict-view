@@ -48,9 +48,11 @@ public class GdeltGeoOsintService {
     private void fetchForConflict(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(4, words.length)));
+        // Replace dashes and special chars for GDELT compatibility
+        name = name.replace("-", " ").replace("/", " ").replaceAll("\\s+", " ").trim();
 
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
-                .queryParam("query", name)
+                .queryParam("query", "\"" + name + "\"")
                 .queryParam("format", "GeoJSON")
                 .queryParam("maxpoints", 40)
                 .queryParam("timespan", "1month")
@@ -61,6 +63,13 @@ public class GdeltGeoOsintService {
             // Fetch as String to handle application/vnd.geo+json content type
             String responseStr = restTemplate.getForObject(url, String.class);
             if (responseStr == null || responseStr.isBlank()) return;
+
+            // Skip non-JSON responses (error pages, rate limit text)
+            responseStr = responseStr.trim();
+            if (!responseStr.startsWith("{") && !responseStr.startsWith("[")) {
+                log.debug("GDELT Geo returned non-JSON for '{}', skipping", conflict.getName());
+                return;
+            }
 
             Map<String, Object> geoJson = objectMapper.readValue(responseStr, Map.class);
 
