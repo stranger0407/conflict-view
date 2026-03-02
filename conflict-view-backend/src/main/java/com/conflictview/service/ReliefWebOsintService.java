@@ -50,7 +50,7 @@ public class ReliefWebOsintService {
         String searchTerm = extractCountryName(conflict);
 
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
-                .queryParam("appname", "conflictview")
+                .queryParam("appname", "conflict-view-osint-dashboard")
                 .queryParam("query[value]", searchTerm)
                 .queryParam("query[operator]", "AND")
                 .queryParam("fields[include][]", "title")

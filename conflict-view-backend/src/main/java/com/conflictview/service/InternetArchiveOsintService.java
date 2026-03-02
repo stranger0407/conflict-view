@@ -74,27 +74,26 @@ public class InternetArchiveOsintService {
 
             int saved = 0;
             for (Map<String, Object> doc : docs) {
-                String identifier = (String) doc.get("identifier");
+                String identifier = extractString(doc.get("identifier"));
                 if (identifier == null) continue;
 
                 String itemUrl = "https://archive.org/details/" + identifier;
                 if (osintResourceRepository.existsByUrl(itemUrl)) continue;
 
-                String mediatype = (String) doc.get("mediatype");
+                String mediatype = extractString(doc.get("mediatype"));
                 ResourceType resourceType = "movies".equalsIgnoreCase(mediatype)
                         ? ResourceType.VIDEO : ResourceType.IMAGE;
 
-                String title = (String) doc.get("title");
+                String title = extractString(doc.get("title"));
                 if (title == null) title = identifier;
 
-                Object descObj = doc.get("description");
-                String description = descObj instanceof String ? (String) descObj : null;
-                if (description instanceof String) {
+                String description = extractString(doc.get("description"));
+                if (description != null) {
                     description = description.replaceAll("<[^>]+>", "").trim();
                 }
 
                 String thumbnailUrl = "https://archive.org/services/img/" + identifier;
-                LocalDateTime publishedAt = parseDate((String) doc.get("date"));
+                LocalDateTime publishedAt = parseDate(extractString(doc.get("date")));
 
                 osintResourceRepository.save(OsintResource.builder()
                         .conflict(conflict)
@@ -129,6 +128,16 @@ public class InternetArchiveOsintService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractString(Object obj) {
+        if (obj instanceof String) return (String) obj;
+        if (obj instanceof List) {
+            List<?> list = (List<?>) obj;
+            if (!list.isEmpty()) return String.valueOf(list.get(0));
+        }
+        return obj != null ? String.valueOf(obj) : null;
     }
 
     private String truncate(String s, int max) {

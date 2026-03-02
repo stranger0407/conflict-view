@@ -6,8 +6,6 @@ import com.conflictview.model.enums.ConflictStatus;
 import com.conflictview.model.enums.ResourceType;
 import com.conflictview.repository.ConflictRepository;
 import com.conflictview.repository.OsintResourceRepository;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -57,6 +56,7 @@ public class GdeltImageOsintService {
         fetchImages(conflict, tagQuery);
     }
 
+    @SuppressWarnings("unchecked")
     private void fetchImages(Conflict conflict, String query) {
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("query", query)
@@ -68,28 +68,37 @@ public class GdeltImageOsintService {
                 .toUriString();
 
         try {
-            GdeltArticle[] articles = restTemplate.getForObject(url, GdeltArticle[].class);
+            // GDELT returns {"articles": [...]} wrapper
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            if (response == null) return;
+
+            List<Map<String, Object>> articles = (List<Map<String, Object>>) response.get("articles");
             if (articles == null) return;
 
             int saved = 0;
-            for (GdeltArticle article : articles) {
-                if (article.getSocialimage() == null || article.getSocialimage().isBlank()) continue;
-                if (article.getUrl() == null) continue;
+            for (Map<String, Object> article : articles) {
+                String socialimage = (String) article.get("socialimage");
+                String articleUrl = (String) article.get("url");
+                if (socialimage == null || socialimage.isBlank()) continue;
+                if (articleUrl == null) continue;
 
                 // Use socialimage URL as unique key since same article URL can have different images
-                String imageUrl = article.getSocialimage();
-                if (osintResourceRepository.existsByUrl(imageUrl)) continue;
+                if (osintResourceRepository.existsByUrl(socialimage)) continue;
+
+                String title = (String) article.get("title");
+                String domain = (String) article.get("domain");
+                String seendate = (String) article.get("seendate");
 
                 osintResourceRepository.save(OsintResource.builder()
                         .conflict(conflict)
                         .resourceType(ResourceType.IMAGE)
-                        .title(truncate(article.getTitle(), 500))
-                        .url(imageUrl)
-                        .thumbnailUrl(imageUrl)
-                        .description("Source: " + article.getDomain())
+                        .title(truncate(title, 500))
+                        .url(socialimage)
+                        .thumbnailUrl(socialimage)
+                        .description("Source: " + domain)
                         .sourcePlatform("GDELT")
-                        .author(article.getDomain())
-                        .publishedAt(parseGdeltDate(article.getSeendate()))
+                        .author(domain)
+                        .publishedAt(parseGdeltDate(seendate))
                         .build());
                 saved++;
                 if (saved >= 30) break; // Cap per query
@@ -129,17 +138,5 @@ public class GdeltImageOsintService {
     private String truncate(String s, int max) {
         if (s == null) return null;
         return s.length() > max ? s.substring(0, max) : s;
-    }
-
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class GdeltArticle {
-        private String url;
-        private String title;
-        private String seendate;
-        private String socialimage;
-        private String domain;
-        private String language;
-        private String sourcecountry;
     }
 }
