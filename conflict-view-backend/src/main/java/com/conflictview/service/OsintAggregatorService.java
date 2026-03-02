@@ -18,6 +18,8 @@ public class OsintAggregatorService {
     private final GdeltGeoOsintService gdeltGeoOsintService;
     private final AcledOsintService acledOsintService;
     private final NasaFirmsOsintService nasaFirmsOsintService;
+    private final WikipediaSummaryOsintService wikipediaSummaryOsintService;
+    private final CrisisIntelOsintService crisisIntelOsintService;
 
     @CacheEvict(value = {"osintSummary"}, allEntries = true)
     public void refreshAllOsint() {
@@ -70,6 +72,18 @@ public class OsintAggregatorService {
             nasaFirmsOsintService.fetchForAllConflicts();
         } catch (Exception e) {
             log.error("NASA FIRMS OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            wikipediaSummaryOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("Wikipedia Summary OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            crisisIntelOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("Crisis Intel OSINT fetch failed: {}", e.getMessage());
         }
 
         long elapsed = System.currentTimeMillis() - start;
