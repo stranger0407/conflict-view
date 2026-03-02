@@ -82,6 +82,9 @@ app:
   firms:
     key: ${NASA_FIRMS_KEY:}
     enabled: ${FIRMS_ENABLED:true}
+  reliefweb:
+    appname: ${RELIEFWEB_APPNAME:}
+    enabled: ${RELIEFWEB_ENABLED:true}
   rss:
     enabled: ${RSS_ENABLED:true}
     feeds:

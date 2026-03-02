@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -29,9 +30,19 @@ public class ReliefWebOsintService {
     private final ConflictRepository conflictRepository;
     private final OsintResourceRepository osintResourceRepository;
 
+    @Value("${app.reliefweb.appname:}")
+    private String appname;
+
+    @Value("${app.reliefweb.enabled:true}")
+    private boolean enabled;
+
     private static final String BASE_URL = "https://api.reliefweb.int/v1/reports";
 
     public void fetchForAllConflicts() {
+        if (!enabled || appname == null || appname.isBlank()) {
+            log.info("ReliefWeb OSINT disabled or appname not configured — skipping");
+            return;
+        }
         List<Conflict> conflicts = conflictRepository.findByStatus(ConflictStatus.ACTIVE);
         for (Conflict conflict : conflicts) {
             try {
@@ -50,7 +61,7 @@ public class ReliefWebOsintService {
         String searchTerm = extractCountryName(conflict);
 
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
-                .queryParam("appname", "conflict-view-osint-dashboard")
+                .queryParam("appname", appname)
                 .queryParam("query[value]", searchTerm)
                 .queryParam("query[operator]", "AND")
                 .queryParam("fields[include][]", "title")

@@ -11,6 +11,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -62,7 +66,12 @@ public class WikimediaOsintService {
                 .toUriString();
 
         try {
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "ConflictView/1.0 (https://github.com/stranger0407/conflict-view; conflict-view-app)");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<Map> responseEntity = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            Map<String, Object> response = responseEntity.getBody();
             if (response == null) return;
 
             Map<String, Object> queryResult = (Map<String, Object>) response.get("query");

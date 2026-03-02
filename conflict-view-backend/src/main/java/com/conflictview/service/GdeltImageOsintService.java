@@ -6,6 +6,7 @@ import com.conflictview.model.enums.ConflictStatus;
 import com.conflictview.model.enums.ResourceType;
 import com.conflictview.repository.ConflictRepository;
 import com.conflictview.repository.OsintResourceRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class GdeltImageOsintService {
     private final RestTemplate restTemplate;
     private final ConflictRepository conflictRepository;
     private final OsintResourceRepository osintResourceRepository;
+    private final ObjectMapper objectMapper;
 
     private static final String BASE_URL = "https://api.gdeltproject.org/api/v2/doc/doc";
     private static final DateTimeFormatter GDELT_DATE = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'");
@@ -68,10 +70,17 @@ public class GdeltImageOsintService {
                 .toUriString();
 
         try {
-            // GDELT returns {"articles": [...]} wrapper
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response == null) return;
+            // Fetch as String to handle any content type (JSON or HTML rate-limit page)
+            String responseStr = restTemplate.getForObject(url, String.class);
+            if (responseStr == null || responseStr.isBlank()) return;
 
+            // Skip HTML responses (rate limit pages)
+            if (responseStr.trim().startsWith("<")) {
+                log.debug("GDELT returned HTML (rate limit), skipping for '{}'", conflict.getName());
+                return;
+            }
+
+            Map<String, Object> response = objectMapper.readValue(responseStr, Map.class);
             List<Map<String, Object>> articles = (List<Map<String, Object>>) response.get("articles");
             if (articles == null) return;
 

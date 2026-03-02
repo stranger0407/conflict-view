@@ -6,6 +6,7 @@ import com.conflictview.model.enums.ConflictStatus;
 import com.conflictview.model.enums.ResourceType;
 import com.conflictview.repository.ConflictRepository;
 import com.conflictview.repository.OsintResourceRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class GdeltGeoOsintService {
     private final RestTemplate restTemplate;
     private final ConflictRepository conflictRepository;
     private final OsintResourceRepository osintResourceRepository;
+    private final ObjectMapper objectMapper;
 
     private static final String BASE_URL = "https://api.gdeltproject.org/api/v2/geo/geo";
 
@@ -56,8 +58,11 @@ public class GdeltGeoOsintService {
                 .toUriString();
 
         try {
-            Map<String, Object> geoJson = restTemplate.getForObject(url, Map.class);
-            if (geoJson == null) return;
+            // Fetch as String to handle application/vnd.geo+json content type
+            String responseStr = restTemplate.getForObject(url, String.class);
+            if (responseStr == null || responseStr.isBlank()) return;
+
+            Map<String, Object> geoJson = objectMapper.readValue(responseStr, Map.class);
 
             List<Map<String, Object>> features = (List<Map<String, Object>>) geoJson.get("features");
             if (features == null) return;
