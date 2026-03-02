@@ -28,6 +28,17 @@ public class OsintResource {
     @Column(name = "resource_type", nullable = false, length = 20)
     private ResourceType resourceType;
 
+    private Double latitude;
+
+    private Double longitude;
+
+    private Integer fatalities;
+
+    @Column(name = "event_type", length = 100)
+    private String eventType;
+
+    private Integer confidence;
+
     @Column(nullable = false, length = 500)
     private String title;
 

@@ -15,5 +15,7 @@ public class OsintSummaryDTO {
     private long mapCount;
     private long infographicCount;
     private long reportCount;
+    private long satelliteCount;
+    private long eventDataCount;
     private long totalCount;
 }

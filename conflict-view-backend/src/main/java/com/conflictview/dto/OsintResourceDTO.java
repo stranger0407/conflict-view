@@ -25,4 +25,9 @@ public class OsintResourceDTO {
     private String author;
     private LocalDateTime publishedAt;
     private String duration;
+    private Double latitude;
+    private Double longitude;
+    private Integer fatalities;
+    private String eventType;
+    private Integer confidence;
 }

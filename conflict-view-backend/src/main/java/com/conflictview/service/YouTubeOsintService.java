@@ -18,6 +18,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -59,14 +61,19 @@ public class YouTubeOsintService {
 
     private void fetchForConflict(Conflict conflict) {
         String query = buildQuery(conflict);
+        String publishedAfter = OffsetDateTime.now(ZoneOffset.UTC).minusDays(30)
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("part", "snippet")
                 .queryParam("q", query)
                 .queryParam("type", "video")
                 .queryParam("maxResults", 25)
-                .queryParam("order", "relevance")
+                .queryParam("order", "date")
                 .queryParam("relevanceLanguage", "en")
                 .queryParam("safeSearch", "moderate")
+                .queryParam("videoDuration", "medium")
+                .queryParam("publishedAfter", publishedAfter)
                 .queryParam("key", apiKey)
                 .build()
                 .toUriString();
@@ -80,6 +87,14 @@ public class YouTubeOsintService {
                 var snippet = item.getSnippet();
                 var videoId = item.getId() != null ? item.getId().getVideoId() : null;
                 if (snippet == null || videoId == null) continue;
+
+                // Skip 24/7 live streams and low-quality content
+                String title = snippet.getTitle();
+                if (title != null) {
+                    String lower = title.toLowerCase();
+                    if (lower.contains("24/7") || lower.contains("live stream") || lower.contains("livestream")
+                            || lower.contains("lofi") || lower.contains("asmr")) continue;
+                }
 
                 String videoUrl = "https://www.youtube.com/watch?v=" + videoId;
                 if (osintResourceRepository.existsByUrl(videoUrl)) continue;
@@ -111,7 +126,19 @@ public class YouTubeOsintService {
     private String buildQuery(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(4, words.length)));
-        return name + " conflict news";
+
+        // Use conflict keywords for more targeted results
+        StringBuilder query = new StringBuilder(name);
+        if (conflict.getKeywords() != null && !conflict.getKeywords().isBlank()) {
+            String[] kws = conflict.getKeywords().split(",");
+            for (int i = 0; i < Math.min(2, kws.length); i++) {
+                String kw = kws[i].trim();
+                if (!kw.isEmpty()) query.append(" ").append(kw);
+            }
+        } else {
+            query.append(" conflict news");
+        }
+        return query.toString();
     }
 
     private LocalDateTime parseDate(String iso) {

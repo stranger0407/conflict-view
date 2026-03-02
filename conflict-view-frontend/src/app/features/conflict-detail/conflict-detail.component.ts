@@ -336,6 +336,16 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
                       <mat-icon>description</mat-icon> Reports
                       <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.reportCount }})</span>
                     </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'SATELLITE'"
+                            (click)="setOsintTypeFilter('SATELLITE')">
+                      <mat-icon>satellite_alt</mat-icon> Satellite
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.satelliteCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'EVENT_DATA'"
+                            (click)="setOsintTypeFilter('EVENT_DATA')">
+                      <mat-icon>warning</mat-icon> Events
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.eventDataCount }})</span>
+                    </button>
                   </div>
                 </div>
 
@@ -358,11 +368,36 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
                         <span class="osint-platform" [attr.data-platform]="res.sourcePlatform">
                           {{ res.sourcePlatform }}
                         </span>
-                        <span class="osint-type-label">{{ res.resourceType }}</span>
+                        <span class="osint-type-label">{{ res.resourceType === 'EVENT_DATA' ? 'EVENT' : res.resourceType }}</span>
                         <span class="osint-date" *ngIf="res.publishedAt">{{ res.publishedAt | timeAgo }}</span>
                       </div>
                       <h4 class="osint-title">{{ res.title }}</h4>
                       <p class="osint-desc" *ngIf="res.description">{{ res.description }}</p>
+                      <!-- Event data extras -->
+                      <div class="osint-extras" *ngIf="res.resourceType === 'EVENT_DATA'">
+                        <span class="osint-badge fatalities" *ngIf="res.fatalities">
+                          <mat-icon>dangerous</mat-icon> {{ res.fatalities }} fatalities
+                        </span>
+                        <span class="osint-badge event-type" *ngIf="res.eventType">{{ res.eventType }}</span>
+                        <span class="osint-badge coords" *ngIf="res.latitude">
+                          <mat-icon>pin_drop</mat-icon> {{ res.latitude | number:'1.2-2' }}, {{ res.longitude | number:'1.2-2' }}
+                        </span>
+                      </div>
+                      <!-- Satellite extras -->
+                      <div class="osint-extras" *ngIf="res.resourceType === 'SATELLITE'">
+                        <span class="osint-badge confidence" *ngIf="res.confidence">
+                          <mat-icon>thermostat</mat-icon> {{ res.confidence }}% confidence
+                        </span>
+                        <span class="osint-badge coords" *ngIf="res.latitude">
+                          <mat-icon>pin_drop</mat-icon> {{ res.latitude | number:'1.4-4' }}, {{ res.longitude | number:'1.4-4' }}
+                        </span>
+                      </div>
+                      <!-- Map extras -->
+                      <div class="osint-extras" *ngIf="res.resourceType === 'MAP' && res.latitude">
+                        <span class="osint-badge coords">
+                          <mat-icon>pin_drop</mat-icon> {{ res.latitude | number:'1.2-2' }}, {{ res.longitude | number:'1.2-2' }}
+                        </span>
+                      </div>
                       <div class="osint-author" *ngIf="res.author">
                         <mat-icon>person</mat-icon> {{ res.author }}
                       </div>
@@ -375,7 +410,7 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
                 <div class="empty-state" *ngIf="!osintLoading && !osintResources.length">
                   <mat-icon>policy</mat-icon>
                   <p>No OSINT resources found for this conflict yet.</p>
-                  <p style="font-size:12px;color:var(--text-muted)">Resources are aggregated from YouTube, ReliefWeb, Wikimedia, and Internet Archive.</p>
+                  <p style="font-size:12px;color:var(--text-muted)">Resources are aggregated from YouTube, ReliefWeb, Wikimedia, Internet Archive, GDELT, ACLED, and NASA FIRMS.</p>
                 </div>
 
                 <!-- Pagination -->
@@ -845,6 +880,10 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
     .osint-platform[data-platform="ReliefWeb"] { background: rgba(59,130,246,0.15); color: #3b82f6; }
     .osint-platform[data-platform="Wikimedia"] { background: rgba(107,114,128,0.15); color: #9ca3af; }
     .osint-platform[data-platform="InternetArchive"] { background: rgba(249,115,22,0.15); color: #f97316; }
+    .osint-platform[data-platform="GDELT"] { background: rgba(66,133,244,0.15); color: #4285f4; }
+    .osint-platform[data-platform="GDELT Geo"] { background: rgba(15,157,88,0.15); color: #0f9d58; }
+    .osint-platform[data-platform="ACLED"] { background: rgba(219,68,55,0.15); color: #db4437; }
+    .osint-platform[data-platform="NASA FIRMS"] { background: rgba(255,111,0,0.15); color: #ff6f00; }
     .osint-type-label {
       color: var(--text-muted);
       text-transform: uppercase;
@@ -893,6 +932,42 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
       border-radius: 50%;
       padding: 4px;
     }
+    .osint-extras {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .osint-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      mat-icon { font-size: 10px; width: 10px; height: 10px; }
+    }
+    .osint-badge.fatalities {
+      background: rgba(239,68,68,0.15);
+      color: #ef4444;
+    }
+    .osint-badge.event-type {
+      background: rgba(139,92,246,0.15);
+      color: #8b5cf6;
+      text-transform: capitalize;
+    }
+    .osint-badge.confidence {
+      background: rgba(255,111,0,0.15);
+      color: #ff6f00;
+    }
+    .osint-badge.coords {
+      background: rgba(107,114,128,0.1);
+      color: var(--text-muted);
+    }
+    .osint-card[class*="EVENT_DATA"] { border-left: 3px solid #db4437; }
+    .osint-card[class*="SATELLITE"] { border-left: 3px solid #ff6f00; }
 
     @media (max-width: 768px) {
       .hero-content { padding: 16px; }
@@ -1048,6 +1123,8 @@ export class ConflictDetailComponent implements OnInit, OnDestroy {
       case 'MAP': return 'map';
       case 'INFOGRAPHIC': return 'insert_chart';
       case 'REPORT': return 'description';
+      case 'SATELLITE': return 'satellite_alt';
+      case 'EVENT_DATA': return 'warning';
       default: return 'link';
     }
   }
