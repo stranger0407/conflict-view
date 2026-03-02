@@ -36,7 +36,8 @@ public class OsintService {
     public OsintSummaryDTO getOsintSummary(UUID conflictId) {
         var rows = osintResourceRepository.countByConflictIdGroupByResourceType(conflictId);
 
-        long videoCount = 0, imageCount = 0, mapCount = 0, infographicCount = 0, reportCount = 0;
+        long videoCount = 0, imageCount = 0, mapCount = 0, infographicCount = 0, reportCount = 0,
+                satelliteCount = 0, eventDataCount = 0;
         for (Object[] row : rows) {
             String type = (String) row[0];
             long count = (Long) row[1];
@@ -46,6 +47,8 @@ public class OsintService {
                 case "MAP" -> mapCount = count;
                 case "INFOGRAPHIC" -> infographicCount = count;
                 case "REPORT" -> reportCount = count;
+                case "SATELLITE" -> satelliteCount = count;
+                case "EVENT_DATA" -> eventDataCount = count;
             }
         }
 
@@ -55,7 +58,9 @@ public class OsintService {
                 .mapCount(mapCount)
                 .infographicCount(infographicCount)
                 .reportCount(reportCount)
-                .totalCount(videoCount + imageCount + mapCount + infographicCount + reportCount)
+                .satelliteCount(satelliteCount)
+                .eventDataCount(eventDataCount)
+                .totalCount(videoCount + imageCount + mapCount + infographicCount + reportCount + satelliteCount + eventDataCount)
                 .build();
     }
 
@@ -72,6 +77,11 @@ public class OsintService {
                 .author(o.getAuthor())
                 .publishedAt(o.getPublishedAt())
                 .duration(o.getDuration())
+                .latitude(o.getLatitude())
+                .longitude(o.getLongitude())
+                .fatalities(o.getFatalities())
+                .eventType(o.getEventType())
+                .confidence(o.getConfidence())
                 .build();
     }
 }

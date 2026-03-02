@@ -75,6 +75,13 @@ app:
     enabled: ${YOUTUBE_ENABLED:true}
   osint:
     enabled: ${OSINT_ENABLED:true}
+  acled:
+    key: ${ACLED_API_KEY:}
+    email: ${ACLED_EMAIL:}
+    enabled: ${ACLED_ENABLED:true}
+  firms:
+    key: ${NASA_FIRMS_KEY:}
+    enabled: ${FIRMS_ENABLED:true}
   rss:
     enabled: ${RSS_ENABLED:true}
     feeds:

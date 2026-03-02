@@ -53,7 +53,7 @@ public class WikimediaOsintService {
                 .queryParam("generator", "search")
                 .queryParam("gsrsearch", query)
                 .queryParam("gsrnamespace", "6")
-                .queryParam("gsrlimit", "30")
+                .queryParam("gsrlimit", "50")
                 .queryParam("prop", "imageinfo")
                 .queryParam("iiprop", "url|extmetadata|size|mime")
                 .queryParam("iiurlwidth", "400")
@@ -115,7 +115,8 @@ public class WikimediaOsintService {
 
     private String buildQuery(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
-        return String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(3, words.length)));
+        String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(3, words.length)));
+        return name + " conflict OR military OR map OR bombing";
     }
 
     @SuppressWarnings("unchecked")

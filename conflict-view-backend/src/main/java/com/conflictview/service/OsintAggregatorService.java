@@ -14,6 +14,10 @@ public class OsintAggregatorService {
     private final ReliefWebOsintService reliefWebOsintService;
     private final WikimediaOsintService wikimediaOsintService;
     private final InternetArchiveOsintService internetArchiveOsintService;
+    private final GdeltImageOsintService gdeltImageOsintService;
+    private final GdeltGeoOsintService gdeltGeoOsintService;
+    private final AcledOsintService acledOsintService;
+    private final NasaFirmsOsintService nasaFirmsOsintService;
 
     @CacheEvict(value = {"osintSummary"}, allEntries = true)
     public void refreshAllOsint() {
@@ -42,6 +46,30 @@ public class OsintAggregatorService {
             internetArchiveOsintService.fetchForAllConflicts();
         } catch (Exception e) {
             log.error("Internet Archive OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            gdeltImageOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("GDELT Image OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            gdeltGeoOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("GDELT Geo OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            acledOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("ACLED OSINT fetch failed: {}", e.getMessage());
+        }
+
+        try {
+            nasaFirmsOsintService.fetchForAllConflicts();
+        } catch (Exception e) {
+            log.error("NASA FIRMS OSINT fetch failed: {}", e.getMessage());
         }
 
         long elapsed = System.currentTimeMillis() - start;

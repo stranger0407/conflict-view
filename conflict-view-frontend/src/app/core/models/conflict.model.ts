@@ -90,7 +90,7 @@ export interface ConflictStats {
   averageReliabilityScore: number;
 }
 
-export type ResourceType = 'VIDEO' | 'IMAGE' | 'MAP' | 'INFOGRAPHIC' | 'REPORT';
+export type ResourceType = 'VIDEO' | 'IMAGE' | 'MAP' | 'INFOGRAPHIC' | 'REPORT' | 'SATELLITE' | 'EVENT_DATA';
 
 export interface OsintResource {
   id: string;
@@ -104,6 +104,11 @@ export interface OsintResource {
   author: string | null;
   publishedAt: string;
   duration: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  fatalities: number | null;
+  eventType: string | null;
+  confidence: number | null;
 }
 
 export interface OsintSummary {
@@ -112,5 +117,7 @@ export interface OsintSummary {
   mapCount: number;
   infographicCount: number;
   reportCount: number;
+  satelliteCount: number;
+  eventDataCount: number;
   totalCount: number;
 }
