@@ -70,6 +70,11 @@ app:
   gdelt:
     base-url: https://api.gdeltproject.org/api/v2
     enabled: ${GDELT_ENABLED:true}
+  youtube:
+    key: ${YOUTUBE_API_KEY:}
+    enabled: ${YOUTUBE_ENABLED:true}
+  osint:
+    enabled: ${OSINT_ENABLED:true}
   rss:
     enabled: ${RSS_ENABLED:true}
     feeds:
@@ -97,5 +102,6 @@ app:
   scheduler:
     news-refresh-cron: "0 */15 * * * *"
     gdelt-sync-cron: "0 0 * * * *"
+    osint-refresh-cron: "0 30 */6 * * *"
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}

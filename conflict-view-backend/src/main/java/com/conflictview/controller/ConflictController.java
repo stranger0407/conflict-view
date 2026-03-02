@@ -2,6 +2,7 @@ package com.conflictview.controller;
 
 import com.conflictview.dto.*;
 import com.conflictview.service.ConflictService;
+import com.conflictview.service.OsintService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class ConflictController {
 
     private final ConflictService conflictService;
+    private final OsintService osintService;
 
     @GetMapping
     @Operation(summary = "Get all active conflicts for map display")
@@ -64,5 +66,21 @@ public class ConflictController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(conflictService.search(q, region, severity, type, status));
+    }
+
+    @GetMapping("/{id}/osint")
+    @Operation(summary = "Get paginated OSINT resources for a conflict")
+    public ResponseEntity<Page<OsintResourceDTO>> getConflictOsint(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(osintService.getOsintResources(id, type, page, size));
+    }
+
+    @GetMapping("/{id}/osint/summary")
+    @Operation(summary = "Get OSINT resource counts by type for a conflict")
+    public ResponseEntity<OsintSummaryDTO> getConflictOsintSummary(@PathVariable UUID id) {
+        return ResponseEntity.ok(osintService.getOsintSummary(id));
     }
 }

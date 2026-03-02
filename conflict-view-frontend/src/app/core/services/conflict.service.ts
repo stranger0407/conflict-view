@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, shareReplay, timer, switchMap } from 'rxjs';
-import { ConflictMap, ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse } from '../models/conflict.model';
+import { ConflictMap, ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse, OsintResource, OsintSummary } from '../models/conflict.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConflictService {
@@ -49,5 +49,17 @@ export class ConflictService {
     if (type) params = params.set('type', type);
     if (status) params = params.set('status', status);
     return this.http.get<ConflictMap[]>(`${this.base}/search`, { params });
+  }
+
+  getOsint(id: string, page = 0, size = 20, type?: string): Observable<PageResponse<OsintResource>> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size);
+    if (type) params = params.set('type', type);
+    return this.http.get<PageResponse<OsintResource>>(`${this.base}/${id}/osint`, { params });
+  }
+
+  getOsintSummary(id: string): Observable<OsintSummary> {
+    return this.http.get<OsintSummary>(`${this.base}/${id}/osint/summary`);
   }
 }

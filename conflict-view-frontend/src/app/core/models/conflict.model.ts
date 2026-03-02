@@ -89,3 +89,28 @@ export interface ConflictStats {
   monthlyTrend: { month: string; incidents: number; casualties: number }[];
   averageReliabilityScore: number;
 }
+
+export type ResourceType = 'VIDEO' | 'IMAGE' | 'MAP' | 'INFOGRAPHIC' | 'REPORT';
+
+export interface OsintResource {
+  id: string;
+  conflictId: string;
+  resourceType: ResourceType;
+  title: string;
+  url: string;
+  thumbnailUrl: string | null;
+  description: string | null;
+  sourcePlatform: string;
+  author: string | null;
+  publishedAt: string;
+  duration: string | null;
+}
+
+export interface OsintSummary {
+  videoCount: number;
+  imageCount: number;
+  mapCount: number;
+  infographicCount: number;
+  reportCount: number;
+  totalCount: number;
+}

@@ -13,7 +13,7 @@ import { NgxChartsModule, LegendPosition } from '@swimlane/ngx-charts';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ConflictService } from '../../core/services/conflict.service';
-import { ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse } from '../../core/models/conflict.model';
+import { ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse, OsintResource, OsintSummary, ResourceType } from '../../core/models/conflict.model';
 import { SeverityBadgeComponent } from '../../shared/components/severity-badge/severity-badge.component';
 import { NewsCardComponent } from '../../shared/components/news-card/news-card.component';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
@@ -291,6 +291,106 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
                     <span class="ss-num">{{ Object.keys(stats.articlesBySource).length }}</span>
                     <span class="ss-label">Unique Sources</span>
                   </div>
+                </div>
+              </div>
+            </mat-tab>
+
+            <!-- OSINT -->
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">policy</mat-icon>
+                OSINT
+                <span class="tab-badge" *ngIf="osintSummary">{{ osintSummary.totalCount | number }}</span>
+              </ng-template>
+              <div class="tab-content osint-tab">
+                <!-- Type filter chips -->
+                <div class="news-filters">
+                  <div class="filter-label">Resource type:</div>
+                  <div class="filter-chips">
+                    <button class="fchip" [class.active]="!osintTypeFilter"
+                            (click)="setOsintTypeFilter(null)">
+                      All <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.totalCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'VIDEO'"
+                            (click)="setOsintTypeFilter('VIDEO')">
+                      <mat-icon>play_circle</mat-icon> Videos
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.videoCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'IMAGE'"
+                            (click)="setOsintTypeFilter('IMAGE')">
+                      <mat-icon>image</mat-icon> Images
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.imageCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'MAP'"
+                            (click)="setOsintTypeFilter('MAP')">
+                      <mat-icon>map</mat-icon> Maps
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.mapCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'INFOGRAPHIC'"
+                            (click)="setOsintTypeFilter('INFOGRAPHIC')">
+                      <mat-icon>insert_chart</mat-icon> Infographics
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.infographicCount }})</span>
+                    </button>
+                    <button class="fchip" [class.active]="osintTypeFilter === 'REPORT'"
+                            (click)="setOsintTypeFilter('REPORT')">
+                      <mat-icon>description</mat-icon> Reports
+                      <span class="chip-count" *ngIf="osintSummary">({{ osintSummary.reportCount }})</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- OSINT resource grid -->
+                <cv-loading-spinner *ngIf="osintLoading"></cv-loading-spinner>
+                <div class="osint-grid" *ngIf="!osintLoading && osintResources.length">
+                  <div class="osint-card" *ngFor="let res of osintResources" (click)="openResource(res)">
+                    <div class="osint-thumb" [class.video-thumb]="res.resourceType === 'VIDEO'">
+                      <img *ngIf="res.thumbnailUrl" [src]="res.thumbnailUrl" [alt]="res.title"
+                           (error)="onOsintImgError($event, res)" loading="lazy">
+                      <div class="osint-no-thumb" *ngIf="!res.thumbnailUrl">
+                        <mat-icon>{{ getResourceIcon(res.resourceType) }}</mat-icon>
+                      </div>
+                      <div class="osint-type-overlay">
+                        <mat-icon>{{ getResourceIcon(res.resourceType) }}</mat-icon>
+                      </div>
+                    </div>
+                    <div class="osint-info">
+                      <div class="osint-meta">
+                        <span class="osint-platform" [attr.data-platform]="res.sourcePlatform">
+                          {{ res.sourcePlatform }}
+                        </span>
+                        <span class="osint-type-label">{{ res.resourceType }}</span>
+                        <span class="osint-date" *ngIf="res.publishedAt">{{ res.publishedAt | timeAgo }}</span>
+                      </div>
+                      <h4 class="osint-title">{{ res.title }}</h4>
+                      <p class="osint-desc" *ngIf="res.description">{{ res.description }}</p>
+                      <div class="osint-author" *ngIf="res.author">
+                        <mat-icon>person</mat-icon> {{ res.author }}
+                      </div>
+                    </div>
+                    <mat-icon class="external-icon">open_in_new</mat-icon>
+                  </div>
+                </div>
+
+                <!-- Empty state -->
+                <div class="empty-state" *ngIf="!osintLoading && !osintResources.length">
+                  <mat-icon>policy</mat-icon>
+                  <p>No OSINT resources found for this conflict yet.</p>
+                  <p style="font-size:12px;color:var(--text-muted)">Resources are aggregated from YouTube, ReliefWeb, Wikimedia, and Internet Archive.</p>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" *ngIf="osintPage && osintPage.totalPages > 1">
+                  <button class="page-btn" [disabled]="osintPage.first"
+                          (click)="loadOsint(osintPage.number - 1)">
+                    <mat-icon>chevron_left</mat-icon>
+                  </button>
+                  <span class="page-info">
+                    Page {{ osintPage.number + 1 }} of {{ osintPage.totalPages }}
+                  </span>
+                  <button class="page-btn" [disabled]="osintPage.last"
+                          (click)="loadOsint(osintPage.number + 1)">
+                    <mat-icon>chevron_right</mat-icon>
+                  </button>
                 </div>
               </div>
             </mat-tab>
@@ -659,12 +759,148 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
       p { font-size: 14px; }
     }
 
+    /* ======= OSINT tab ======= */
+    .chip-count { font-size: 10px; opacity: 0.7; margin-left: 2px; }
+    .osint-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .osint-card {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      overflow: hidden;
+      transition: all var(--transition-base);
+      position: relative;
+      &:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-color-hover);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        .external-icon { opacity: 1; }
+        .osint-type-overlay { opacity: 1; }
+      }
+    }
+    .osint-thumb {
+      position: relative;
+      width: 100%;
+      height: 160px;
+      background: var(--bg-primary);
+      overflow: hidden;
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+    .osint-thumb.video-thumb { height: 180px; }
+    .osint-no-thumb {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      mat-icon { font-size: 40px; color: var(--text-muted); opacity: 0.4; }
+    }
+    .osint-type-overlay {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      opacity: 0.7;
+      transition: opacity var(--transition-fast);
+      mat-icon { font-size: 16px; color: #fff; }
+    }
+    .osint-info {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .osint-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 10px;
+      flex-wrap: wrap;
+    }
+    .osint-platform {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 9px;
+    }
+    .osint-platform[data-platform="YouTube"] { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .osint-platform[data-platform="ReliefWeb"] { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .osint-platform[data-platform="Wikimedia"] { background: rgba(107,114,128,0.15); color: #9ca3af; }
+    .osint-platform[data-platform="InternetArchive"] { background: rgba(249,115,22,0.15); color: #f97316; }
+    .osint-type-label {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+    .osint-date { color: var(--text-muted); }
+    .osint-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.4;
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .osint-desc {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .osint-author {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: auto;
+      mat-icon { font-size: 12px; }
+    }
+    .osint-card .external-icon {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 16px;
+      color: #fff;
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      padding: 4px;
+    }
+
     @media (max-width: 768px) {
       .hero-content { padding: 16px; }
       .tabs-wrap { padding: 0 16px 16px; }
       .hero-header { flex-direction: column; }
       .hero-stats { gap: 12px; }
       .charts-grid { grid-template-columns: 1fr; }
+      .osint-grid { grid-template-columns: 1fr; }
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -702,11 +938,20 @@ export class ConflictDetailComponent implements OnInit, OnDestroy {
   sentimentData: any[] = [];
   eventTypesData: any[] = [];
 
+  // OSINT
+  osintResources: OsintResource[] = [];
+  osintSummary: OsintSummary | null = null;
+  osintPage: PageResponse<OsintResource> | null = null;
+  osintTypeFilter: string | null = null;
+  osintLoading = false;
+
   ngOnInit(): void {
     this.loadConflict();
     this.loadNews(0);
     this.loadEvents();
     this.loadStats();
+    this.loadOsintSummary();
+    this.loadOsint(0);
   }
 
   private loadConflict(): void {
@@ -761,6 +1006,54 @@ export class ConflictDetailComponent implements OnInit, OnDestroy {
   setSentimentFilter(sentiment: string | null): void {
     this.newsFilter.sentiment = sentiment;
     this.loadNews(0);
+  }
+
+  // ---- OSINT ----
+  loadOsint(page: number): void {
+    this.osintLoading = true;
+    this.cdr.markForCheck();
+    this.conflictService.getOsint(
+      this.id, page, 20,
+      this.osintTypeFilter ?? undefined
+    ).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => {
+        this.osintPage = data;
+        this.osintResources = data.content;
+        this.osintLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.osintLoading = false; this.cdr.markForCheck(); }
+    });
+  }
+
+  private loadOsintSummary(): void {
+    this.conflictService.getOsintSummary(this.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => { this.osintSummary = data; this.cdr.markForCheck(); }
+    });
+  }
+
+  setOsintTypeFilter(type: string | null): void {
+    this.osintTypeFilter = type;
+    this.loadOsint(0);
+  }
+
+  openResource(res: OsintResource): void {
+    window.open(res.url, '_blank', 'noopener,noreferrer');
+  }
+
+  getResourceIcon(type: string): string {
+    switch (type) {
+      case 'VIDEO': return 'play_circle';
+      case 'IMAGE': return 'image';
+      case 'MAP': return 'map';
+      case 'INFOGRAPHIC': return 'insert_chart';
+      case 'REPORT': return 'description';
+      default: return 'link';
+    }
+  }
+
+  onOsintImgError(event: Event, res: OsintResource): void {
+    res.thumbnailUrl = null;
   }
 
   ngOnDestroy(): void {

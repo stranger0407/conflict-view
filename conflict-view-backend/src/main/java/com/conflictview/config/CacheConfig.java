@@ -14,7 +14,7 @@ public class CacheConfig {
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager manager = new CaffeineCacheManager(
-                "conflicts", "conflictDetail", "dashboardStats", "newsSources", "conflictStats"
+                "conflicts", "conflictDetail", "dashboardStats", "newsSources", "conflictStats", "osintSummary"
         );
         manager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
