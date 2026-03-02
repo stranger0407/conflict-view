@@ -80,6 +80,13 @@ public class GdeltImageOsintService {
                 return;
             }
 
+            // Skip non-JSON error text responses
+            String trimmed = responseStr.trim();
+            if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+                log.debug("GDELT returned non-JSON for '{}', skipping", conflict.getName());
+                return;
+            }
+
             Map<String, Object> response = objectMapper.readValue(responseStr, Map.class);
             List<Map<String, Object>> articles = (List<Map<String, Object>>) response.get("articles");
             if (articles == null) return;
@@ -136,7 +143,7 @@ public class GdeltImageOsintService {
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(3, words.length)));
         // Replace dashes and special chars for GDELT compatibility
         name = name.replace("-", " ").replace("/", " ").replaceAll("\\s+", " ").trim();
-        return "\"" + name + "\" imagetag:military OR imagetag:explosion OR imagetag:protest OR imagetag:fire";
+        return "\"" + name + "\" imagetag:\"military\" OR imagetag:\"explosion\" OR imagetag:\"protest\" OR imagetag:\"fire\"";
     }
 
     private LocalDateTime parseGdeltDate(String dateStr) {
