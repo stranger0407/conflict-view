@@ -1,15 +1,23 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, shareReplay, timer, switchMap } from 'rxjs';
 import { ConflictMap, ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse } from '../models/conflict.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConflictService {
   private http = inject(HttpClient);
   private base = '/api/conflicts';
+  private mapCache$?: Observable<ConflictMap[]>;
 
   getAllForMap(): Observable<ConflictMap[]> {
-    return this.http.get<ConflictMap[]>(this.base);
+    if (!this.mapCache$) {
+      this.mapCache$ = this.http.get<ConflictMap[]>(this.base).pipe(
+        shareReplay({ bufferSize: 1, refCount: true })
+      );
+      // Invalidate cache after 5 minutes
+      timer(300_000).subscribe(() => { this.mapCache$ = undefined; });
+    }
+    return this.mapCache$;
   }
 
   getDetail(id: string): Observable<ConflictDetail> {

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -149,7 +149,8 @@ import { TimeAgoPipe } from '../../pipes/time-ago.pipe';
       opacity: 0;
       transition: opacity var(--transition-fast);
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NewsCardComponent {
   @Input({ required: true }) article!: NewsArticle;

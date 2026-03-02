@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -100,19 +100,19 @@ import { SeverityBadgeComponent } from '../../shared/components/severity-badge/s
       <!-- Stats bar (bottom) -->
       <div class="stats-bar">
         <div class="stat critical">
-          <span class="stat-num">{{ countBySeverity('CRITICAL') }}</span>
+          <span class="stat-num">{{ severityCounts['CRITICAL'] }}</span>
           <span class="stat-label">Critical</span>
         </div>
         <div class="stat high">
-          <span class="stat-num">{{ countBySeverity('HIGH') }}</span>
+          <span class="stat-num">{{ severityCounts['HIGH'] }}</span>
           <span class="stat-label">High</span>
         </div>
         <div class="stat medium">
-          <span class="stat-num">{{ countBySeverity('MEDIUM') }}</span>
+          <span class="stat-num">{{ severityCounts['MEDIUM'] }}</span>
           <span class="stat-label">Medium</span>
         </div>
         <div class="stat low">
-          <span class="stat-num">{{ countBySeverity('LOW') }}</span>
+          <span class="stat-num">{{ severityCounts['LOW'] }}</span>
           <span class="stat-label">Low</span>
         </div>
         <div class="stat-divider"></div>
@@ -410,13 +410,15 @@ import { SeverityBadgeComponent } from '../../shared/components/severity-badge/s
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
 
   private conflictService = inject(ConflictService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   map!: L.Map;
   conflicts: ConflictMap[] = [];
@@ -424,6 +426,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   activeFilter: 'ALL' | Severity = 'ALL';
   sidebarOpen = false;
   loading = true;
+  severityCounts: Record<string, number> = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
   private markerLayer = L.layerGroup();
   private sub?: Subscription;
   private stylesInjected = false;
@@ -434,9 +437,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.conflicts = data;
         this.filteredConflicts = data;
         this.loading = false;
+        this.computeSeverityCounts();
+        this.cdr.markForCheck();
         this.renderMarkers();
       },
-      error: () => { this.loading = false; }
+      error: () => { this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -595,6 +600,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ? this.conflicts
       : this.conflicts.filter(c => c.severity === filter);
     this.renderMarkers();
+    this.cdr.markForCheck();
   }
 
   selectConflict(conflict: ConflictMap): void {
@@ -605,8 +611,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/conflict', conflict.id]);
   }
 
-  countBySeverity(severity: Severity): number {
-    return this.conflicts.filter(c => c.severity === severity).length;
+  private computeSeverityCounts(): void {
+    this.severityCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+    for (const c of this.conflicts) {
+      if (this.severityCounts[c.severity] !== undefined) {
+        this.severityCounts[c.severity]++;
+      }
+    }
   }
 
   ngOnDestroy(): void {

@@ -14,6 +14,8 @@ public interface ConflictEventRepository extends JpaRepository<ConflictEvent, UU
 
     List<ConflictEvent> findByConflictIdOrderByEventDateDesc(UUID conflictId);
 
+    long countByConflictId(UUID conflictId);
+
     @Query("""
             SELECT e.eventType, COUNT(e) as cnt
             FROM ConflictEvent e

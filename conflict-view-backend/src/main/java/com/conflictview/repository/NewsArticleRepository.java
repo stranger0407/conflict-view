@@ -48,6 +48,14 @@ public interface NewsArticleRepository extends JpaRepository<NewsArticle, UUID> 
     long countByConflictId(UUID conflictId);
 
     @Query("""
+            SELECT a.conflict.id, COUNT(a)
+            FROM NewsArticle a
+            WHERE a.conflict.id IN :ids
+            GROUP BY a.conflict.id
+            """)
+    List<Object[]> countByConflictIds(@Param("ids") List<UUID> ids);
+
+    @Query("""
             SELECT CAST(a.sentiment AS string), COUNT(a) as cnt
             FROM NewsArticle a
             WHERE a.conflict.id = :conflictId
