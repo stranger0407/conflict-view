@@ -179,6 +179,7 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
                       <span class="tl-month">{{ event.eventDate | date:'MMM' }}</span>
                       <span class="tl-day">{{ event.eventDate | date:'d' }}</span>
                       <span class="tl-year">{{ event.eventDate | date:'yyyy' }}</span>
+                      <span class="tl-time">{{ event.eventDate | date:'HH:mm' }}</span>
                     </div>
                     <div class="timeline-connector">
                       <div class="tl-dot"></div>
@@ -679,6 +680,7 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
       .tl-month { font-size: 10px; font-weight: 600; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em; }
       .tl-day { font-size: 20px; font-weight: 700; color: var(--text-primary); line-height: 1; }
       .tl-year { font-size: 10px; color: var(--text-muted); }
+      .tl-time { font-size: 10px; font-weight: 500; color: var(--accent-blue-light); margin-top: 2px; letter-spacing: 0.05em; }
     }
     .timeline-connector {
       display: flex;
