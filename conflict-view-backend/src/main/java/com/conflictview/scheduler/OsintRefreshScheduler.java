@@ -4,6 +4,9 @@ import com.conflictview.service.OsintAggregatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +19,19 @@ public class OsintRefreshScheduler {
 
     @Value("${app.osint.enabled:true}")
     private boolean enabled;
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Async
+    public void onStartup() {
+        if (!enabled) return;
+        log.info("Running initial OSINT fetch on startup...");
+        try {
+            Thread.sleep(10000); // Wait 10s for other services to initialize
+            osintAggregatorService.refreshAllOsint();
+        } catch (Exception e) {
+            log.error("Startup OSINT fetch error: {}", e.getMessage());
+        }
+    }
 
     @Scheduled(cron = "${app.scheduler.osint-refresh-cron}")
     public void refreshOsint() {

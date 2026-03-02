@@ -2,6 +2,7 @@ package com.conflictview.controller;
 
 import com.conflictview.dto.*;
 import com.conflictview.service.ConflictService;
+import com.conflictview.service.OsintAggregatorService;
 import com.conflictview.service.OsintService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +22,7 @@ public class ConflictController {
 
     private final ConflictService conflictService;
     private final OsintService osintService;
+    private final OsintAggregatorService osintAggregatorService;
 
     @GetMapping
     @Operation(summary = "Get all active conflicts for map display")
@@ -82,5 +84,12 @@ public class ConflictController {
     @Operation(summary = "Get OSINT resource counts by type for a conflict")
     public ResponseEntity<OsintSummaryDTO> getConflictOsintSummary(@PathVariable UUID id) {
         return ResponseEntity.ok(osintService.getOsintSummary(id));
+    }
+
+    @PostMapping("/osint/refresh")
+    @Operation(summary = "Manually trigger OSINT data refresh for all conflicts")
+    public ResponseEntity<String> refreshOsint() {
+        new Thread(() -> osintAggregatorService.refreshAllOsint()).start();
+        return ResponseEntity.ok("OSINT refresh started");
     }
 }
