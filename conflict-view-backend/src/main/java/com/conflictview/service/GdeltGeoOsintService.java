@@ -48,8 +48,8 @@ public class GdeltGeoOsintService {
     private void fetchForConflict(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(4, words.length)));
-        // Replace dashes and special chars for GDELT compatibility
-        name = name.replace("-", " ").replace("/", " ").replaceAll("\\s+", " ").trim();
+        // Replace dashes, ampersands, and special chars for GDELT compatibility
+        name = name.replace("-", " ").replace("/", " ").replace("&", " ").replaceAll("[^a-zA-Z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
 
         String url = UriComponentsBuilder.fromHttpUrl(BASE_URL)
                 .queryParam("query", "\"" + name + "\"")

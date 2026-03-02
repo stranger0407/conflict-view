@@ -128,8 +128,8 @@ public class GdeltImageOsintService {
     private String buildNameQuery(Conflict conflict) {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(4, words.length)));
-        // Replace dashes with spaces for GDELT compatibility
-        name = name.replace("-", " ").replaceAll("\\s+", " ").trim();
+        // Replace dashes and special chars for GDELT compatibility
+        name = name.replace("-", " ").replace("&", " ").replaceAll("[^a-zA-Z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
         String keywords = "";
         if (conflict.getKeywords() != null && !conflict.getKeywords().isBlank()) {
             String[] kws = conflict.getKeywords().split(",");
@@ -142,7 +142,7 @@ public class GdeltImageOsintService {
         String[] words = conflict.getName().split("\\s+");
         String name = String.join(" ", java.util.Arrays.copyOfRange(words, 0, Math.min(3, words.length)));
         // Replace dashes and special chars for GDELT compatibility
-        name = name.replace("-", " ").replace("/", " ").replaceAll("\\s+", " ").trim();
+        name = name.replace("-", " ").replace("/", " ").replace("&", " ").replaceAll("[^a-zA-Z0-9\\s]", " ").replaceAll("\\s+", " ").trim();
         return "\"" + name + "\" imagetag:\"military\" OR imagetag:\"explosion\" OR imagetag:\"protest\" OR imagetag:\"fire\"";
     }
 

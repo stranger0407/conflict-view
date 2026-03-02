@@ -45,7 +45,8 @@ public class CrisisIntelOsintService {
 
     private static final String[] INTEL_FEEDS = {
             "https://reliefweb.int/updates/rss.xml",
-            "https://www.ecoi.net/en/rss/document-list/all-countries-of-origin.xml",
+            "https://news.un.org/feed/subscribe/en/news/topic/peace-and-security/feed/rss.xml",
+            "https://www.msf.org/rss/all",
     };
 
     private static final DateTimeFormatter RSS_DATE = DateTimeFormatter.ofPattern(
@@ -94,7 +95,15 @@ public class CrisisIntelOsintService {
                 rssItem.link = getElementText(item, "link");
                 rssItem.description = getElementText(item, "description");
                 rssItem.pubDate = getElementText(item, "pubDate");
-                rssItem.source = feedUrl.contains("reliefweb") ? "ReliefWeb" : "ECOI";
+                if (feedUrl.contains("reliefweb")) {
+                    rssItem.source = "ReliefWeb";
+                } else if (feedUrl.contains("news.un.org")) {
+                    rssItem.source = "UN News";
+                } else if (feedUrl.contains("msf.org")) {
+                    rssItem.source = "MSF";
+                } else {
+                    rssItem.source = "Crisis Intel";
+                }
 
                 // Extract media thumbnail if available
                 NodeList mediaNodes = item.getElementsByTagName("media:content");
