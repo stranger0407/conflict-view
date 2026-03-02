@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -342,10 +342,12 @@ import { TimeAgoPipe } from '../../shared/pipes/time-ago.pipe';
       .dashboard { padding: 16px; }
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
+  private cdr = inject(ChangeDetectorRef);
 
   stats: DashboardStats | null = null;
   loading = true;
@@ -355,23 +357,19 @@ export class DashboardComponent implements OnInit {
   };
   legendPos = LegendPosition.Right;
 
-  get regionChartData() {
-    if (!this.stats) return [];
-    return Object.entries(this.stats.conflictsByRegion).map(([name, value]) => ({ name, value }));
-  }
-
-  get typeChartData() {
-    if (!this.stats) return [];
-    return Object.entries(this.stats.conflictsByType).map(([name, value]) => ({
-      name: name.replace('_', ' '),
-      value
-    }));
-  }
+  regionChartData: any[] = [];
+  typeChartData: any[] = [];
 
   ngOnInit(): void {
     this.dashboardService.getStats().subscribe({
-      next: data => { this.stats = data; this.loading = false; },
-      error: () => { this.loading = false; }
+      next: data => {
+        this.stats = data;
+        this.loading = false;
+        this.regionChartData = Object.entries(data.conflictsByRegion).map(([name, value]) => ({ name, value }));
+        this.typeChartData = Object.entries(data.conflictsByType).map(([name, value]) => ({ name: name.replace('_', ' '), value }));
+        this.cdr.markForCheck();
+      },
+      error: () => { this.loading = false; this.cdr.markForCheck(); }
     });
   }
 }

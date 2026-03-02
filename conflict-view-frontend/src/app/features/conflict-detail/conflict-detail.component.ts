@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,6 +10,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NgxChartsModule, LegendPosition } from '@swimlane/ngx-charts';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ConflictService } from '../../core/services/conflict.service';
 import { ConflictDetail, NewsArticle, ConflictEvent, ConflictStats, PageResponse } from '../../core/models/conflict.model';
 import { SeverityBadgeComponent } from '../../shared/components/severity-badge/severity-badge.component';
@@ -664,12 +666,15 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
       .hero-stats { gap: 12px; }
       .charts-grid { grid-template-columns: 1fr; }
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ConflictDetailComponent implements OnInit {
+export class ConflictDetailComponent implements OnInit, OnDestroy {
   @Input() id!: string;
 
   private conflictService = inject(ConflictService);
+  private cdr = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   conflict: ConflictDetail | null = null;
   articles: NewsArticle[] = [];
@@ -692,36 +697,10 @@ export class ConflictDetailComponent implements OnInit {
   sentimentScheme: any = { domain: ['#ef4444', '#6b7280', '#22c55e'] };
   legendPos = LegendPosition.Right;
 
-  get incidentTrendData() {
-    if (!this.stats) return [];
-    return [{
-      name: 'Articles',
-      series: this.stats.monthlyTrend.map(d => ({ name: d.month, value: d.incidents }))
-    }];
-  }
-
-  get sourceBreakdownData() {
-    if (!this.stats) return [];
-    return Object.entries(this.stats.articlesBySource)
-      .slice(0, 8)
-      .map(([name, value]) => ({ name, value }));
-  }
-
-  get sentimentData() {
-    if (!this.stats) return [];
-    return [
-      { name: 'Negative', value: this.stats.sentimentBreakdown?.['NEGATIVE'] ?? 0 },
-      { name: 'Neutral', value: this.stats.sentimentBreakdown?.['NEUTRAL'] ?? 0 },
-      { name: 'Positive', value: this.stats.sentimentBreakdown?.['POSITIVE'] ?? 0 },
-    ];
-  }
-
-  get eventTypesData() {
-    if (!this.stats) return [];
-    return Object.entries(this.stats.eventsByType)
-      .slice(0, 8)
-      .map(([name, value]) => ({ name, value }));
-  }
+  incidentTrendData: any[] = [];
+  sourceBreakdownData: any[] = [];
+  sentimentData: any[] = [];
+  eventTypesData: any[] = [];
 
   ngOnInit(): void {
     this.loadConflict();
@@ -731,9 +710,9 @@ export class ConflictDetailComponent implements OnInit {
   }
 
   private loadConflict(): void {
-    this.conflictService.getDetail(this.id).subscribe({
-      next: data => { this.conflict = data; this.loading = false; },
-      error: () => { this.loading = false; }
+    this.conflictService.getDetail(this.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => { this.conflict = data; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -743,7 +722,7 @@ export class ConflictDetailComponent implements OnInit {
       this.id, page, 20,
       this.newsFilter.sentiment ?? undefined,
       this.newsFilter.source ?? undefined
-    ).subscribe({
+    ).pipe(takeUntil(this.destroy$)).subscribe({
       next: data => {
         this.newsPage = data;
         this.articles = data.content;
@@ -751,25 +730,41 @@ export class ConflictDetailComponent implements OnInit {
           this.availableSources = [...new Set(data.content.map(a => a.sourceDomain).filter(Boolean))];
         }
         this.newsLoading = false;
+        this.cdr.markForCheck();
       },
-      error: () => { this.newsLoading = false; }
+      error: () => { this.newsLoading = false; this.cdr.markForCheck(); }
     });
   }
 
   private loadEvents(): void {
-    this.conflictService.getEvents(this.id).subscribe({
-      next: data => { this.events = data; }
+    this.conflictService.getEvents(this.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => { this.events = data; this.cdr.markForCheck(); }
     });
   }
 
   private loadStats(): void {
-    this.conflictService.getStats(this.id).subscribe({
-      next: data => { this.stats = data; }
+    this.conflictService.getStats(this.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: data => {
+        this.stats = data;
+        this.incidentTrendData = [{
+          name: 'Articles',
+          series: data.monthlyTrend.map(d => ({ name: d.month, value: d.incidents }))
+        }];
+        this.sourceBreakdownData = Object.entries(data.articlesBySource).slice(0, 8).map(([name, value]) => ({ name, value }));
+        this.sentimentData = data.sentimentBreakdown ? Object.entries(data.sentimentBreakdown).map(([name, value]) => ({ name, value })) : [];
+        this.eventTypesData = data.eventsByType ? Object.entries(data.eventsByType).filter(([_, v]) => v > 0).map(([name, value]) => ({ name, value })) : [];
+        this.cdr.markForCheck();
+      }
     });
   }
 
   setSentimentFilter(sentiment: string | null): void {
     this.newsFilter.sentiment = sentiment;
     this.loadNews(0);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 }

@@ -31,9 +31,10 @@ public class ConflictService {
 
     @Cacheable("conflicts")
     public List<ConflictMapDTO> getAllForMap() {
-        return conflictRepository.findByStatusOrderBySeverityDescNameAsc(ConflictStatus.ACTIVE)
-                .stream()
-                .map(this::toMapDTO)
+        var conflicts = conflictRepository.findByStatusOrderBySeverityDescNameAsc(ConflictStatus.ACTIVE);
+        var articleCounts = batchArticleCounts(conflicts);
+        return conflicts.stream()
+                .map(c -> toMapDTO(c, articleCounts.getOrDefault(c.getId(), 0L)))
                 .toList();
     }
 
@@ -110,6 +111,7 @@ public class ConflictService {
                 .toList();
     }
 
+    @Cacheable(value = "conflictStats", key = "#conflictId")
     public ConflictStatsDTO getStats(UUID conflictId) {
         var articlesBySrc = newsArticleRepository.countBySourceForConflict(conflictId);
         var eventsByType = conflictEventRepository.countByEventType(conflictId);
@@ -166,16 +168,27 @@ public class ConflictService {
         ConflictStatus status = statusStr != null && !statusStr.isBlank()
                 ? ConflictStatus.valueOf(statusStr.toUpperCase()) : null;
 
-        return conflictRepository.search(
+        var results = conflictRepository.search(
                         q != null && q.isBlank() ? null : q,
                         region != null && region.isBlank() ? null : region,
-                        severity, type, status)
-                .stream()
-                .map(this::toMapDTO)
+                        severity, type, status);
+        var articleCounts = batchArticleCounts(results);
+        return results.stream()
+                .map(c -> toMapDTO(c, articleCounts.getOrDefault(c.getId(), 0L)))
                 .toList();
     }
 
-    private ConflictMapDTO toMapDTO(Conflict c) {
+    private java.util.Map<UUID, Long> batchArticleCounts(List<Conflict> conflicts) {
+        if (conflicts.isEmpty()) return java.util.Collections.emptyMap();
+        var ids = conflicts.stream().map(Conflict::getId).toList();
+        var map = new java.util.HashMap<UUID, Long>();
+        for (Object[] row : newsArticleRepository.countByConflictIds(ids)) {
+            map.put((UUID) row[0], (Long) row[1]);
+        }
+        return map;
+    }
+
+    private ConflictMapDTO toMapDTO(Conflict c, long articleCount) {
         return ConflictMapDTO.builder()
                 .id(c.getId())
                 .name(c.getName())
@@ -187,12 +200,12 @@ public class ConflictService {
                 .status(c.getStatus())
                 .startDate(c.getStartDate())
                 .involvedParties(c.getInvolvedParties())
-                .articleCount(newsArticleRepository.countByConflictId(c.getId()))
+                .articleCount(articleCount)
                 .build();
     }
 
     private ConflictDetailDTO toDetailDTO(Conflict c) {
-        long eventCount = conflictEventRepository.findByConflictIdOrderByEventDateDesc(c.getId()).size();
+        long eventCount = conflictEventRepository.countByConflictId(c.getId());
         if (eventCount == 0) {
             eventCount = Math.min(newsArticleRepository.countByConflictId(c.getId()), 50);
         }

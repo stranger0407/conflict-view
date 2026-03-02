@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -374,10 +374,12 @@ import { ConflictTypeLabelPipe } from '../../shared/pipes/conflict-type-label.pi
       .filters-row { flex-direction: column; align-items: stretch; }
       .filter-field { width: 100%; }
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchComponent implements OnInit {
   private conflictService = inject(ConflictService);
+  private cdr = inject(ChangeDetectorRef);
 
   query = '';
   results: ConflictMap[] = [];
@@ -408,6 +410,7 @@ export class SearchComponent implements OnInit {
     // Load total count
     this.conflictService.getAllForMap().subscribe(data => {
       this.totalConflicts = data.length;
+      this.cdr.markForCheck();
     });
   }
 
@@ -424,8 +427,8 @@ export class SearchComponent implements OnInit {
       this.filters.type ?? undefined,
       this.filters.status ?? undefined
     ).subscribe({
-      next: data => { this.results = data; this.loading = false; },
-      error: () => { this.loading = false; }
+      next: data => { this.results = data; this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.loading = false; this.cdr.markForCheck(); }
     });
   }
 
