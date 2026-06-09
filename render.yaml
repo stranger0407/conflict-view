@@ -12,7 +12,7 @@ services:
     plan: free
     runtime: docker
     region: singapore
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./conflict-view-backend/Dockerfile
     dockerContext: ./conflict-view-backend
     healthCheckPath: /actuator/health
     envVars:
