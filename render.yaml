@@ -39,7 +39,7 @@ services:
           name: conflictview-db
           property: password
       - key: CORS_ALLOWED_ORIGINS
-        value: "*"
+        value: "https://browser-sepia-five.vercel.app"
       - key: GDELT_ENABLED
         value: "true"
       - key: RSS_ENABLED
